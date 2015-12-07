@@ -7,6 +7,11 @@ let s:plug = expand('<sfile>:p:h:h')
 let s:python_version = 'python '
 let s:pyfile_version = 'pyfile '
 
+augroup sourcekittendaemon_complete
+  autocmd!
+  autocmd CompleteDone *.swift call s:CompletionFinished(v:completed_item)
+augroup END
+
 function! s:LoadPythonScript()
   if exists("s:loaded_sourcekittendaemon_python") && s:loaded_sourcekittendaemon_python
     return
@@ -23,6 +28,16 @@ function! s:GetByteOfLastDot()
   let line = line2byte(line("."))
   let [lnum, col] = searchpos("\\.", "bn", line("."))
   return line + col
+endfunction
+
+function! s:CompletionFinished(item)
+  let word = a:item["word"]
+  if word !~ "("
+    return
+  endif
+
+  let [lnum, col] = searchpos("(", "bn", line("."))
+  call cursor(lnum, col + 1)
 endfunction
 
 function! sourcekittendaemon#Complete(findstart, base)
