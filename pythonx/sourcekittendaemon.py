@@ -24,31 +24,31 @@ class SourceKittenDaemonVim(object):
 
     def complete(self, prefix, path, offset):
         try:
-            clazz = SourceKittenDaemonVim
+            cls = SourceKittenDaemonVim
             response = self.__daemon.complete(path, offset)
             completions = [
-                x for x in map(clazz.convert_to_completions, response)
+                x for x in map(cls.convert_to_completions, response)
                     if x and SourceKittenDaemonVim.matches(prefix, x)]
             vim.command('let s:result = ' + str(completions))
         except urllib2.HTTPError, error:
             vim.command("echoerr " + error)
 
     @classmethod
-    def convert_to_completions(clazz, response):
+    def convert_to_completions(cls, response):
         try:
             return {
-                "word": clazz.remove_tokens(str(response["sourcetext"])),
+                "word": cls.remove_tokens(str(response["sourcetext"])),
                 "abbr": str(response["name"]),
             }
         except KeyError:
             return None
 
     @classmethod
-    def remove_tokens(clazz, string):
-        return re.sub(clazz.__token_regex, "", string)
+    def remove_tokens(cls, string):
+        return re.sub(cls.__token_regex, "", string)
 
     @classmethod
-    def matches(clazz, prefix, dictionary):
+    def matches(cls, prefix, dictionary):
         if not prefix:
             return True
         word = dictionary["word"]
