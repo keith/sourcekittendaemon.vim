@@ -3,43 +3,53 @@ import re
 import urllib2
 import vim
 
-TOKEN_REGEX = re.compile("<#.*?#>")
+
+class SourceKittenDaemon(object):
+    def __init__(self, port):
+        self.__port = port
+
+    def complete(self, path, offset):
+        request = urllib2.Request("http://localhost:%d/complete" % self.__port)
+        request.add_header("X-Path", path)
+        request.add_header("X-Offset", offset)
+        response = urllib2.urlopen(request).read()
+        return json.loads(response)
 
 
-def removeTokens(string):
-    return re.sub(TOKEN_REGEX, "", string)
+class SourceKittenDaemonVim(object):
+    __token_regex = re.compile("<#.*?#>")
 
+    def __init__(self, port=8081):
+        self.__daemon = SourceKittenDaemon(port)
 
-def completionDictionary(response):
-    try:
-        return {
-            "word": removeTokens(str(response["sourcetext"])),
-            "abbr": str(response["name"]),
-        }
-    except KeyError:
-        return None
+    def complete(self, prefix, path, offset):
+        try:
+            clazz = SourceKittenDaemonVim
+            response = self.__daemon.complete(path, offset)
+            completions = [
+                x for x in map(clazz.convert_to_completions, response)
+                    if x and SourceKittenDaemonVim.matches(prefix, x)]
+            vim.command('let s:result = ' + str(completions))
+        except urllib2.HTTPError, error:
+            vim.command("echoerr " + error)
 
+    @classmethod
+    def convert_to_completions(clazz, response):
+        try:
+            return {
+                "word": clazz.remove_tokens(str(response["sourcetext"])),
+                "abbr": str(response["name"]),
+            }
+        except KeyError:
+            return None
 
-def getCompletion(port, path, offset):
-    request = urllib2.Request("http://localhost:%d/complete" % port)
-    request.add_header("X-Path", path)
-    request.add_header("X-Offset", offset)
-    response = urllib2.urlopen(request).read()
-    return json.loads(response)
+    @classmethod
+    def remove_tokens(clazz, string):
+        return re.sub(clazz.__token_regex, "", string)
 
-
-def matches(prefix, dictionary):
-    if not prefix:
-        return True
-    word = dictionary["word"]
-    return word.startswith(prefix)
-
-
-def main(prefix, path, offset, port=8081):
-    try:
-        body = getCompletion(port, path, offset)
-        completions = map(completionDictionary, body)
-        filtered = [x for x in completions if x and matches(prefix, x)]
-        vim.command('let s:result = ' + str(filtered))
-    except urllib2.HTTPError, error:
-        vim.command("echoerr " + error)
+    @classmethod
+    def matches(clazz, prefix, dictionary):
+        if not prefix:
+            return True
+        word = dictionary["word"]
+        return word.startswith(prefix)
