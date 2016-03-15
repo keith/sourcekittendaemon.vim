@@ -17,11 +17,7 @@ function! s:LoadPythonScript()
     return
   endif
   let s:loaded_sourcekittendaemon_python = 1
-
-  let l:script = s:plug . "/pythonx/sourcekittendaemon.py"
-  execute s:python_version . 'import sys'
-  execute s:python_version . 'sys.path.append("' . s:plug . '")'
-  execute s:pyfile_version . l:script
+  execute s:python_version . "import sourcekittendaemon"
 endfunction
 
 function! s:GetByteOfLastDot()
@@ -48,7 +44,7 @@ function! sourcekittendaemon#Complete(findstart, base)
 
   update
   call s:LoadPythonScript()
-  execute "python main(prefix = '" . a:base
+  execute "python sourcekittendaemon.main(prefix = '" . a:base
         \ . "', path = '" . expand("%:p")
         \ . "', offset = " . s:GetByteOfLastDot() . ")"
   return s:result
