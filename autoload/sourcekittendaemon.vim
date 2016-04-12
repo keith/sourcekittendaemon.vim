@@ -22,6 +22,7 @@ function! s:LoadPythonScript()
   execute s:python_version . 'import sys'
   execute s:python_version . 'sys.path.append("' . s:plug . '")'
   execute s:pyfile_version . l:script
+  execute s:python_version . 'source_kitten_daemon_vim = SourceKittenDaemonVim()'
 endfunction
 
 function! s:GetByteOfLastDot()
@@ -48,7 +49,7 @@ function! sourcekittendaemon#Complete(findstart, base)
 
   update
   call s:LoadPythonScript()
-  execute "python main(prefix = '" . a:base
+  execute "python source_kitten_daemon_vim.complete(prefix = '" . a:base
         \ . "', path = '" . expand("%:p")
         \ . "', offset = " . s:GetByteOfLastDot() . ")"
   return s:result
